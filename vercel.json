@@ -1,6 +1,5 @@
 {
     "framework": null,
-    "outputDirectory": "public",
     "functions": {
         "api/index.php": {
             "runtime": "vercel-php@0.7.4",
@@ -9,7 +8,8 @@
         }
     },
     "routes": [
-        { "handle": "filesystem" },
+        { "src": "^/(build|themes|fonts|forge)/(.*)$", "dest": "/public/$1/$2" },
+        { "src": "^/(favicon\\.ico|robots\\.txt)$", "dest": "/public/$1" },
         { "src": "/(.*)", "dest": "/api/index.php" }
     ],
     "crons": [
