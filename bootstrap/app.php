@@ -11,7 +11,7 @@ use Illuminate\Foundation\Http\Middleware\PreventRequestsDuringMaintenance;
 use Webkul\Core\Http\Middleware\SecureHeaders;
 use Webkul\Installer\Http\Middleware\CanInstall;
 
-return Application::configure(basePath: dirname(__DIR__))
+$app = Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
         commands: __DIR__.'/../routes/console.php',
@@ -53,3 +53,13 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions) {
         //
     })->create();
+
+/**
+ * Vercel's serverless functions only allow writes to /tmp. Redirect Laravel's
+ * storage path (compiled views, framework cache, logs) there when running on Vercel.
+ */
+if (env('VERCEL')) {
+    $app->useStoragePath('/tmp/storage');
+}
+
+return $app;
