@@ -4,9 +4,11 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
 
 /**
- * Vercel has no persistent cron daemon, so Vercel Cron Jobs (configured in vercel.json)
- * hit this route once a minute to drive Laravel's scheduler instead. Protected by the
- * CRON_SECRET env var, which Vercel automatically sends as a Bearer token on cron requests.
+ * Vercel has no persistent cron daemon. Vercel Cron Jobs (configured in vercel.json) hit
+ * this route once a day to run Bagisto's daily maintenance commands directly, since a
+ * Hobby-plan cron can't fire per-minute to drive Laravel's schedule:run at each task's
+ * exact configured time. Protected by the CRON_SECRET env var, which Vercel automatically
+ * sends as a Bearer token on cron requests.
  */
 Route::get('/cron/schedule', function () {
     $secret = env('CRON_SECRET');
@@ -16,7 +18,14 @@ Route::get('/cron/schedule', function () {
         401
     );
 
-    Artisan::call('schedule:run');
+    Artisan::call('indexer:index', ['--type' => ['price']]);
+    Artisan::call('product:price-rule:index');
+    Artisan::call('campaign:process');
+    Artisan::call('invoice:cron');
 
-    return response('Scheduler executed.');
+    if (core()->getConfigData('general.exchange_rates.schedule.enabled')) {
+        Artisan::call('exchange-rate:update');
+    }
+
+    return response('Daily maintenance commands executed.');
 });
